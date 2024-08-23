@@ -19,13 +19,15 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-
 export default function CurrencyConverter() {
 
-    const [baseCurrency, setBaseCurrency]=useState("");
-    const [amount,setAmount]=useState("");
-    const [targetCurrency, setTargetCurrency]=useState("");
-    const [convertedAmount, setConvertedAmount]=useState("");
+    const [baseCurrency,setBaseCurrency] = useState("");
+    const [amount,setAmount] = useState("");
+    const [targetCurrency,setTargetCurrency] = useState("");
+    const [convertedAmount,setConvertedAmount] = useState("");
+    const [exchangeRatesCache,setExchangeRatesCache] = useState<Record<string,number> | null>(null);
+    const currencies = ["USD", "EUR", "GBP", "BDT"];
+    const filteredCurrencies=currencies.filter((currency) => currency!==baseCurrency);
   return (
     <Card className="w-full max-w-md mx-auto">
       <CardHeader>
@@ -42,11 +44,11 @@ export default function CurrencyConverter() {
               <SelectValue placeholder="Select currency" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="USD">USD</SelectItem>
-              <SelectItem value="EUR">EUR</SelectItem>
-              <SelectItem value="GBP">GBP</SelectItem>
-              <SelectItem value="BDT">BDT</SelectItem>
-              
+              {
+                currencies.map((currency)=>(
+                  <SelectItem value={currency} key={currency}>{currency}</SelectItem>
+                ))
+              }
             </SelectContent>
           </Select>
         </div>
@@ -68,11 +70,11 @@ export default function CurrencyConverter() {
               <SelectValue placeholder="Select currency" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="USD">USD</SelectItem>
-              <SelectItem value="EUR">EUR</SelectItem>
-              <SelectItem value="GBP">GBP</SelectItem>
-              <SelectItem value="BDT">BDT</SelectItem>
-              
+              {
+                filteredCurrencies.map((currency)=>(
+                  <SelectItem value={currency} key={currency}>{currency}</SelectItem>
+                ))
+              }
             </SelectContent>
           </Select>
         </div>
@@ -83,11 +85,40 @@ export default function CurrencyConverter() {
             type="text"
             placeholder="Converted amount"
             readOnly
+            value={convertedAmount}
           />
         </div>
       </CardContent>
       <CardFooter className="flex justify-end">
-        <Button type="submit">Convert</Button>
+        <Button type="submit" onClick={async ()=>{
+          let exchangeRates;
+          if(!exchangeRatesCache){
+            try {
+              const response = await fetch("https://static.tripovy.com/exchange_rates.json");
+              if(!response.ok){
+                throw new Error("Failed to fetch exchange rates.");
+              }
+
+              exchangeRates=(await response.json()) as Record<string,number>;
+              setExchangeRatesCache(exchangeRates);
+
+            } catch (error) {
+              alert("Failed to connect to the server.");
+            }
+          }else{
+            exchangeRates=exchangeRatesCache;
+          }
+          if (!exchangeRates) {
+            return;
+          }
+
+          const baseCurrencyRate = exchangeRates[baseCurrency];
+          const targetCurrencyRate = exchangeRates[targetCurrency];
+          const target=(1/baseCurrencyRate)*targetCurrencyRate*Number(amount);
+          setConvertedAmount(target.toFixed(2));
+        }}
+        disabled={!baseCurrency || !targetCurrency || !amount}
+        > Convert </Button>
       </CardFooter>
     </Card>
   );
