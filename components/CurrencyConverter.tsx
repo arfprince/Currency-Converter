@@ -28,6 +28,7 @@ export default function CurrencyConverter() {
     const [exchangeRatesCache,setExchangeRatesCache] = useState<Record<string,number> | null>(null);
     const currencies = ["USD", "EUR", "GBP", "BDT"];
     const filteredCurrencies=currencies.filter((currency) => currency!==baseCurrency);
+    
   return (
     <Card className="w-full max-w-md mx-auto">
       <CardHeader>
